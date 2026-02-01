@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  bday_bot:
+    build: .
+    container_name: birthday_reminder_bot
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./birthday_db.sqlite:/app/birthday_db.sqlite
