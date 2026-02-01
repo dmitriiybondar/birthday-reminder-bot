@@ -4,7 +4,7 @@ from aiogram.types import Message
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 
-from database import select_list, insert_birthday, del_birthday
+from database import select_list, insert_birthday, del_birthday, update_birthday, select_names
 from states import Form
 
 router = Router()
@@ -42,6 +42,12 @@ async def cmd_add_birthday(message: Message, state: FSMContext):
 async def cmd_delete_birthday(message: Message, state: FSMContext):
     await state.set_state(Form.delete_birth)
     await message.answer("Введіть ім'я для видалення")
+
+
+@router.message(Command("update_birthday"))
+async def cmd_update_birthday(message: Message, state: FSMContext):
+    await state.set_state(Form.edit_birth)
+    await message.answer("Введіть ім'я для оновлення")
 
 
 @router.message(Form.add_birth)
@@ -88,3 +94,44 @@ async def delete_birthday(message: Message, state: FSMContext):
         logging.error(f"Помилка при видаленні запису {e}")
     finally:
         await state.clear()
+
+
+@router.message(Form.edit_birth)
+async def edit_birthday(message: Message, state: FSMContext):
+    data = await state.get_data()
+    columns = ["name", "date", "tag"]
+
+    if "target_name" not in data:
+        all_names = select_names()
+
+        if message.text.lower().strip() not in [name.lower() for name in all_names]:
+            await message.answer("Нема такої людини")
+            return
+        
+        await state.update_data(target_name=message.text)
+        await message.answer("Виберіть параметр для зміни (name, date, tag)")
+        return
+
+    elif "column" not in data:
+        choice = message.text.lower().strip()
+
+        if choice not in columns:
+            await message.answer("Параметр має бути один з (name, date, tag)")
+            return
+
+        await state.update_data(column=choice)
+        await message.answer("Ввежіть нове значення")
+        return
+
+    else:
+        value = message.text
+        target = data["target_name"]
+        column = data["column"]
+
+        try:
+            update_birthday(target, column, value)
+            await message.answer("Запис оновлено")
+        except:
+            await message.answer("Помилка при оновлені запису")
+        finally:
+            await state.clear()

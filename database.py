@@ -33,6 +33,20 @@ def select_list():
         conn.close()
 
 
+def select_names():
+    try:
+        conn = sqlite3.connect("birthday_db.sqlite")
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM birthdays")
+        return [row[0] for row in cursor.fetchall()]
+    
+    except Exception as e:
+        logger.error(f"Помилка при переборі імен {e}")
+        return[]
+
+    finally:
+        conn.close()
+
 def insert_birthday(name, date, tag):
     try:
         conn = sqlite3.connect("birthday_db.sqlite")
@@ -59,7 +73,7 @@ def del_birthday(name):
 
         cursor.execute("SELECT * FROM birthdays WHERE name = ?", (name,))
         result = cursor.fetchone()
-        
+
         if result:
             cursor.execute("DELETE FROM birthdays WHERE name = ?", (name,))
             conn.commit()
@@ -73,6 +87,24 @@ def del_birthday(name):
 
     except Exception as e:
         logger.error(f"помиилка при видаленні запису {e}")
+
+    finally:
+        conn.close()
+
+
+def update_birthday(name, column, value):
+    try:
+        conn = sqlite3.connect("birthday_db.sqlite")
+        cursor = conn.cursor()
+
+        cursor.execute(
+            f"UPDATE birthdays SET {column} = ? WHERE name = ?", (value, name))
+
+        conn.commit()
+        logger.info("Запис оновлено")
+
+    except Exception as e:
+        logger.error("Помилка прионовлені {e}")
 
     finally:
         conn.close()
