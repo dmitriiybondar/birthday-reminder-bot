@@ -22,4 +22,4 @@ COPY . .
 RUN chown -R botuser:botuser /app
 USER botuser
 
-CMD ["python", "bot.py"]
+CMD ["python", "src/bot.py"]
