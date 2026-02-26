@@ -1,5 +1,5 @@
 services:
-  bot:
+  birthday_bot:
     build: 
       context: ..
       dockerfile: docker/Dockerfile
@@ -10,9 +10,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - db
+      - birthday_db
   
-  db:
+  birthday_db:
     image: postgres:15-alpine
     container_name: birthday_db
     restart: always
