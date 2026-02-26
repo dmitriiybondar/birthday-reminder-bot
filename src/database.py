@@ -41,10 +41,15 @@ async def select_list():
     try:
         conn = await get_connection()
         rows = await conn.fetch("SELECT * FROM birthdays")
-        return rows
+
+        if rows:
+            return rows
+        
+        return[]
 
     except Exception as e:
         logger.error(f"Помилка при надсиланні списку {e}")
+        return[]
 
     finally:
         if conn:
@@ -55,7 +60,10 @@ async def select_names():
     try:
         conn = await get_connection()
         rows = await conn.fetch("SELECT name FROM birthdays")
-        return [row[0] for row in rows]
+        if rows:
+            return [row[0] for row in rows]
+        
+        return[]
     
     except Exception as e:
         logger.error(f"Помилка при переборі імен {e}")
@@ -91,7 +99,6 @@ async def del_birthday(name):
 
         if result:
             await conn.execute("DELETE FROM birthdays WHERE name = $1", name)
-
             logger.info(f"День народження {name} видалено")
             return "success"
 
@@ -116,6 +123,26 @@ async def update_birthday(name, column, value):
 
     except Exception as e:
         logger.error("Помилка прионовлені {e}")
+
+    finally:
+        if conn:
+            await conn.close()
+
+async def find_birthday(date):
+    try:
+        conn = await get_connection()
+        rows = await conn.fetch("SELECT * FROM birthdays WHERE date = $1", date)
+    
+        if rows:
+            logger.info("Дні народження знайдено в базі")
+            return rows
+        
+        logger.info("Днів народження в базі не знайдено")
+        return[]
+    
+    except Exception as e:
+        logger.error("Помилка при перевірці дати")
+        return[]
 
     finally:
         if conn:
