@@ -1,2 +1,3 @@
 .env
-birthday_db.sqlite
+.venv
+venv

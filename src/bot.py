@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 async def main():
     load_dotenv()
-    init_db()
+    await init_db()
 
     bot = Bot(
         token=os.getenv("BOT_TOKEN"),

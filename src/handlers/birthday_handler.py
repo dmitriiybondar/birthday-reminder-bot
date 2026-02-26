@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @router.message(Command("list"))
 async def cmd_list(message: Message):
     try:
-        result = select_list()
+        result = await select_list()
 
         if result:
             items = [f"{res[1]} - {res[2]}" for res in result]
@@ -25,7 +25,6 @@ async def cmd_list(message: Message):
 
         else:
             await message.answer("Нема записів")
-            logger.warning("Нема записів")
 
     except Exception as e:
         await message.answer(f"Помилка {e}")
@@ -70,7 +69,7 @@ async def add_birthday(message: Message, state: FSMContext):
         date = data["date"]
 
         try:
-            insert_birthday(name, date, tag)
+            await insert_birthday(name, date, tag)
             await message.answer("Запис додано")
         except:
             await message.answer("Помилка додавання запису")
@@ -83,7 +82,7 @@ async def delete_birthday(message: Message, state: FSMContext):
     name = message.text
 
     try:
-        result = del_birthday(name)
+        result = await del_birthday(name)
         if result == "success":
             await message.answer(f"День народження {name} видалено")
         else:
@@ -102,7 +101,7 @@ async def edit_birthday(message: Message, state: FSMContext):
     columns = ["name", "date", "tag"]
 
     if "target_name" not in data:
-        all_names = select_names()
+        all_names = await select_names()
 
         if message.text.lower().strip() not in [name.lower() for name in all_names]:
             await message.answer("Нема такої людини")
@@ -129,7 +128,7 @@ async def edit_birthday(message: Message, state: FSMContext):
         column = data["column"]
 
         try:
-            update_birthday(target, column, value)
+            await update_birthday(target, column, value)
             await message.answer("Запис оновлено")
         except:
             await message.answer("Помилка при оновлені запису")
