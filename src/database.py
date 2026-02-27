@@ -122,7 +122,7 @@ async def update_birthday(name, column, value):
         logger.info("Запис оновлено")
 
     except Exception as e:
-        logger.error("Помилка прионовлені {e}")
+        logger.error(f"Помилка при оновлені {e}")
 
     finally:
         if conn:

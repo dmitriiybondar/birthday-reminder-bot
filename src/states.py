@@ -4,3 +4,9 @@ class Form(StatesGroup):
     add_birth = State()
     delete_birth = State()
     edit_birth = State()
+
+
+class EditBirthday(StatesGroup):
+    edit_name = State()
+    select_field = State()
+    value = State()
