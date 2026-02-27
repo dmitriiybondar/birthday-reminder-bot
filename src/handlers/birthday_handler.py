@@ -1,18 +1,17 @@
 import logging
-from aiogram import Router
-from aiogram.types import Message
-from aiogram.filters.command import Command
+from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
+from aiogram.filters.command import Command
 
 from database import select_list, insert_birthday, del_birthday, update_birthday, select_names
-from states import Form
+from states import Form, EditBirthday
 
 router = Router()
 logger = logging.getLogger(__name__)
 
 
 @router.message(Command("list"))
-async def cmd_list(message: Message):
+async def cmd_list(message: types.Message):
     try:
         result = await select_list()
 
@@ -32,25 +31,25 @@ async def cmd_list(message: Message):
 
 
 @router.message(Command("add_birthday"))
-async def cmd_add_birthday(message: Message, state: FSMContext):
+async def cmd_add_birthday(message: types.Message, state: FSMContext):
     await state.set_state(Form.add_birth)
     await message.answer("Введіть ім'я")
 
 
 @router.message(Command("delete_birthday"))
-async def cmd_delete_birthday(message: Message, state: FSMContext):
+async def cmd_delete_birthday(message: types.Message, state: FSMContext):
     await state.set_state(Form.delete_birth)
     await message.answer("Введіть ім'я для видалення")
 
 
 @router.message(Command("update_birthday"))
-async def cmd_update_birthday(message: Message, state: FSMContext):
-    await state.set_state(Form.edit_birth)
+async def cmd_update_birthday(message: types.Message, state: FSMContext):
+    await state.set_state(EditBirthday.edit_name)
     await message.answer("Введіть ім'я для оновлення")
 
 
 @router.message(Form.add_birth)
-async def add_birthday(message: Message, state: FSMContext):
+async def add_birthday(message: types.Message, state: FSMContext):
     data = await state.get_data()
 
     if "name" not in data:
@@ -78,7 +77,7 @@ async def add_birthday(message: Message, state: FSMContext):
 
 
 @router.message(Form.delete_birth)
-async def delete_birthday(message: Message, state: FSMContext):
+async def delete_birthday(message: types.Message, state: FSMContext):
     name = message.text
 
     try:
@@ -95,42 +94,50 @@ async def delete_birthday(message: Message, state: FSMContext):
         await state.clear()
 
 
-@router.message(Form.edit_birth)
-async def edit_birthday(message: Message, state: FSMContext):
+@router.message(EditBirthday.edit_name)
+async def edit_birthday_name(message: types.Message, state: FSMContext):
+    all_names = await select_names()
+
+    if message.text.lower().strip() not in [name.lower() for name in all_names]:
+        await message.answer("Нема такої людини")
+        return
+    
+    await state.update_data(edit_name=message.text)
+
+    buttons = [
+        [
+            types.InlineKeyboardButton(text="Ім'я", callback_data="name"),
+            types.InlineKeyboardButton(text="Дата", callback_data="date"),
+            types.InlineKeyboardButton(text="Тег", callback_data="tag")
+        ]
+    ]
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    await message.answer("Виберіть параметр для зміни", reply_markup=keyboard)
+    await state.set_state(EditBirthday.select_field)
+
+@router.callback_query(EditBirthday.select_field)
+async def edit_birthday_date(callback: types.CallbackQuery, state: FSMContext):
+    choice = callback.data
+    await state.update_data(edit_column=choice)
+    await callback.message.answer("Введіть нове значення")
+    await state.set_state(EditBirthday.value)
+    await callback.answer()
+
+
+@router.message(EditBirthday.value)
+async def edit_birthday_value(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    columns = ["name", "date", "tag"]
+    
+    value = message.text
+    name = data["edit_name"]
+    column = data["edit_column"]
 
-    if "target_name" not in data:
-        all_names = await select_names()
+    try:
+        await update_birthday(name, column, value)
+        await message.answer("Запис оновлено")
+    except:
+        await message.answer("Помилка при оновлені запису")
+    finally:
+        await state.clear()
 
-        if message.text.lower().strip() not in [name.lower() for name in all_names]:
-            await message.answer("Нема такої людини")
-            return
-        
-        await state.update_data(target_name=message.text)
-        await message.answer("Виберіть параметр для зміни (name, date, tag)")
-        return
-
-    elif "column" not in data:
-        choice = message.text.lower().strip()
-
-        if choice not in columns:
-            await message.answer("Параметр має бути один з (name, date, tag)")
-            return
-
-        await state.update_data(column=choice)
-        await message.answer("Ввежіть нове значення")
-        return
-
-    else:
-        value = message.text
-        target = data["target_name"]
-        column = data["column"]
-
-        try:
-            await update_birthday(target, column, value)
-            await message.answer("Запис оновлено")
-        except:
-            await message.answer("Помилка при оновлені запису")
-        finally:
-            await state.clear()
