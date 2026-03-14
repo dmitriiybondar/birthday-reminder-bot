@@ -2,9 +2,11 @@ import logging
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from database import select_list, insert_birthday, del_birthday, update_birthday, select_names
-from states import Form, EditBirthday
+from database.birthdays_data import select_list, insert_birthday, del_birthday, update_birthday, select_names
+from database.tags_data import get_tags
+from states.birthday_states import AddBirthday, DeleteBirthday, EditBirthday
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -32,13 +34,13 @@ async def cmd_list(message: types.Message):
 
 @router.message(Command("add_birthday"))
 async def cmd_add_birthday(message: types.Message, state: FSMContext):
-    await state.set_state(Form.add_birth)
+    await state.set_state(AddBirthday.add_name)
     await message.answer("Введіть ім'я")
 
 
 @router.message(Command("delete_birthday"))
 async def cmd_delete_birthday(message: types.Message, state: FSMContext):
-    await state.set_state(Form.delete_birth)
+    await state.set_state(DeleteBirthday.delete_birth)
     await message.answer("Введіть ім'я для видалення")
 
 
@@ -48,35 +50,65 @@ async def cmd_update_birthday(message: types.Message, state: FSMContext):
     await message.answer("Введіть ім'я для оновлення")
 
 
-@router.message(Form.add_birth)
-async def add_birthday(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-
-    if "name" not in data:
+@router.message(AddBirthday.add_name)
+async def add_birthday_name(message: types.Message, state: FSMContext):
+    try:
         await state.update_data(name=message.text)
         await message.answer("Введіть дату в форматі ДД.ММ")
-        return
 
-    elif "date" not in data:
+    except Exception as e:
+        await message.answer(f"Помилка додавання імені")
+        logger.error("Помилка додавання імені")
+
+    finally:
+        await state.clear()
+
+@router.message(AddBirthday.add_date)
+async def add_birthday_date(message: types.Message, state: FSMContext):
+    try:
         await state.update_data(date=message.text)
-        await message.answer("Введіть тег")
-        return
 
-    else:
-        tag = message.text
+        tags = await get_tags()
+        builder = InlineKeyboardBuilder()   
+
+        for tag in tags:
+            builder.add(
+                types.InlineKeyboardButton(
+                    text = tag.tag,
+                    callback_data=tag.tag
+                )
+            )
+        builder.adjust(3)
+        keyboard = builder.as_markup()
+
+        await message.answer("Виберіть тег:", reply_markup=keyboard)
+
+    except Exception as e:
+        await message.answer("Помилка додавання дати")
+        logger.error("Помилка додавання дати")
+
+    finally:
+        await state.clear()
+
+@router.callback_query(AddBirthday.add_date)
+async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
+    try:
+        data = await state.get_data()
+        tag = callback.data
         name = data["name"]
         date = data["date"]
 
-        try:
-            await insert_birthday(name, date, tag)
-            await message.answer("Запис додано")
-        except:
-            await message.answer("Помилка додавання запису")
-        finally:
-            await state.clear()
+        await insert_birthday(name, date, tag)
+        await callback.message.answer("Дані успішно додавано")
 
+    except Exception as e:
+        await callback.message.answer("Помилка додавання даних")
+        logger.error("Помилка додавання даних")
 
-@router.message(Form.delete_birth)
+    finally:
+        await state.clear()
+
+@router.message(DeleteBirthday.delete_birth)
 async def delete_birthday(message: types.Message, state: FSMContext):
     name = message.text
 
@@ -136,8 +168,9 @@ async def edit_birthday_value(message: types.Message, state: FSMContext):
     try:
         await update_birthday(name, column, value)
         await message.answer("Запис оновлено")
-    except:
+    except Exception as e:
         await message.answer("Помилка при оновлені запису")
+        logging.error(f"Помилка при редагуванні даних {e}")
     finally:
         await state.clear()
 

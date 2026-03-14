@@ -1,23 +1,10 @@
-import asyncpg
 import logging
-import os
+from .connection import get_connection
 
 logger = logging.getLogger(__name__)
 
-async def get_connection():
-    try:
-        return await asyncpg.connect(
-            host=os.getenv("POSTGRES_HOST"),
-            database=os.getenv("POSTGRES_DB"),
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD"),
-            port=5432
-        )
-    except Exception as e:
-        logger.error(f"Помилка підключення {e}")
-        return None
-
-async def init_db():
+async def init_birthday_db():
+    conn = None
     try:
         conn = await get_connection()
         await conn.execute('''
@@ -26,11 +13,10 @@ async def init_db():
                 name TEXT,
                 date TEXT,
                 tag TEXT
-            )
+            );
         ''')
-
     except Exception as e:
-        logger.error(f"Помилка ініціалізації бази {e}")
+        logger.error(f"Помилка ініціалізації бази днів народження {e}")
 
     finally:
         if conn:

@@ -11,8 +11,10 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from handlers.birthday_handler import router as birthday_router
 from handlers.base_commands import router as base_router
+from handlers.tag_handler import router as tag_router
 from scheduler import send_reminders
-from database import init_db
+from database.birthdays_data import init_birthday_db
+from database.tags_data import init_tag_db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,7 +29,8 @@ logger = logging.getLogger(__name__)
 
 async def main():
     load_dotenv()
-    await init_db()
+    await init_birthday_db()
+    await init_tag_db()
 
     user = int(os.getenv("ADMIN_USER_ID"))
     bot = Bot(
@@ -38,6 +41,7 @@ async def main():
 
     dp.include_router(base_router)
     dp.include_router(birthday_router)
+    dp.include_router(tag_router)
 
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
 
