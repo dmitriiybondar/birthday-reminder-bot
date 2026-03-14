@@ -55,13 +55,13 @@ async def add_birthday_name(message: types.Message, state: FSMContext):
     try:
         await state.update_data(name=message.text)
         await message.answer("Введіть дату в форматі ДД.ММ")
+        await state.set_state(AddBirthday.add_date)
 
     except Exception as e:
         await message.answer(f"Помилка додавання імені")
         logger.error("Помилка додавання імені")
-
-    finally:
         await state.clear()
+
 
 @router.message(AddBirthday.add_date)
 async def add_birthday_date(message: types.Message, state: FSMContext):
@@ -72,10 +72,11 @@ async def add_birthday_date(message: types.Message, state: FSMContext):
         builder = InlineKeyboardBuilder()   
 
         for tag in tags:
+            tag_name = tag["tag"]
             builder.add(
                 types.InlineKeyboardButton(
-                    text = tag.tag,
-                    callback_data=tag.tag
+                    text = tag_name,
+                    callback_data=tag_name
                 )
             )
         builder.adjust(3)
@@ -84,11 +85,10 @@ async def add_birthday_date(message: types.Message, state: FSMContext):
         await message.answer("Виберіть тег:", reply_markup=keyboard)
 
     except Exception as e:
-        await message.answer("Помилка додавання дати")
+        await message.answer(f"Помилка додавання дати {e}")
         logger.error("Помилка додавання дати")
-
-    finally:
         await state.clear()
+
 
 @router.callback_query(AddBirthday.add_date)
 async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
@@ -107,6 +107,7 @@ async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
 
     finally:
         await state.clear()
+        await callback.answer()
 
 @router.message(DeleteBirthday.delete_birth)
 async def delete_birthday(message: types.Message, state: FSMContext):
@@ -128,33 +129,50 @@ async def delete_birthday(message: types.Message, state: FSMContext):
 
 @router.message(EditBirthday.edit_name)
 async def edit_birthday_name(message: types.Message, state: FSMContext):
-    all_names = await select_names()
+    try:
+        all_names = await select_names()
 
-    if message.text.lower().strip() not in [name.lower() for name in all_names]:
-        await message.answer("Нема такої людини")
-        return
-    
-    await state.update_data(edit_name=message.text)
+        if message.text.lower().strip() not in [name.lower() for name in all_names]:
+            await message.answer("Нема такої людини")
+            return
+        
+        await state.update_data(edit_name=message.text)
 
-    buttons = [
-        [
-            types.InlineKeyboardButton(text="Ім'я", callback_data="name"),
-            types.InlineKeyboardButton(text="Дата", callback_data="date"),
-            types.InlineKeyboardButton(text="Тег", callback_data="tag")
+        buttons = [
+            [
+                types.InlineKeyboardButton(text="Ім'я", callback_data="name"),
+                types.InlineKeyboardButton(text="Дата", callback_data="date"),
+                types.InlineKeyboardButton(text="Тег", callback_data="tag")
+            ]
         ]
-    ]
-    keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+        keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    await message.answer("Виберіть параметр для зміни", reply_markup=keyboard)
-    await state.set_state(EditBirthday.select_field)
+        await message.answer("Виберіть параметр для зміни", reply_markup=keyboard)
+        await state.set_state(EditBirthday.select_field)
+
+    except Exception as e:
+        logger.error(f"Помилка при редагуванні імені {e}")
+        await message.answer("Помилка при редагуванні імені")
+        await state.clear()
 
 @router.callback_query(EditBirthday.select_field)
 async def edit_birthday_date(callback: types.CallbackQuery, state: FSMContext):
-    choice = callback.data
-    await state.update_data(edit_column=choice)
-    await callback.message.answer("Введіть нове значення")
-    await state.set_state(EditBirthday.value)
-    await callback.answer()
+    try:
+        choice = callback.data
+
+        await state.update_data(edit_column=choice)
+        await callback.message.answer("Введіть нове значення")
+
+        await state.set_state(EditBirthday.value)
+        await callback.answer()
+
+    except Exception as e:
+        logger.error(f"Помилка при редагуванні дати {e}")
+        await callback.message.answer("Помилка при редагуванні дати")
+        await state.clear()
+
+    finally:
+        await callback.answer()
 
 
 @router.message(EditBirthday.value)
