@@ -11,4 +11,5 @@ class DeleteBirthday(StatesGroup):
 class EditBirthday(StatesGroup):
     edit_name = State()
     select_field = State()
+    tag_value = State()
     value = State()
