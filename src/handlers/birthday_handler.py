@@ -46,8 +46,27 @@ async def cmd_delete_birthday(message: types.Message, state: FSMContext):
 
 @router.message(Command("update_birthday"))
 async def cmd_update_birthday(message: types.Message, state: FSMContext):
-    await state.set_state(EditBirthday.edit_name)
-    await message.answer("Введіть ім'я для оновлення")
+    try:
+        people = await select_names()
+        builder = InlineKeyboardBuilder()
+
+        for name in people:
+            builder.add(
+                types.InlineKeyboardButton(
+                    text=name,
+                    callback_data=name
+                )
+            )
+        builder.adjust(3)
+        keyboard = builder.as_markup()
+
+        await message.answer("Введіть ім'я для оновлення", reply_markup=keyboard)
+        await state.set_state(EditBirthday.edit_name)
+
+    except Exception as e:
+        logger.error(f"Помилка вибору імені {e}")
+        await message.answer("Помилка вибору імені")
+        await state.clear()
 
 
 @router.message(AddBirthday.add_name)
@@ -127,16 +146,11 @@ async def delete_birthday(message: types.Message, state: FSMContext):
         await state.clear()
 
 
-@router.message(EditBirthday.edit_name)
-async def edit_birthday_name(message: types.Message, state: FSMContext):
+@router.callback_query(EditBirthday.edit_name)
+async def edit_birthday_name(callback: types.CallbackQuery, state: FSMContext):
     try:
-        all_names = await select_names()
-
-        if message.text.lower().strip() not in [name.lower() for name in all_names]:
-            await message.answer("Нема такої людини")
-            return
-        
-        await state.update_data(edit_name=message.text)
+        data = callback.data
+        await state.update_data(edit_name=data)
 
         buttons = [
             [
@@ -147,12 +161,12 @@ async def edit_birthday_name(message: types.Message, state: FSMContext):
         ]
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-        await message.answer("Виберіть параметр для зміни", reply_markup=keyboard)
+        await callback.message.answer("Виберіть параметр для зміни", reply_markup=keyboard)
         await state.set_state(EditBirthday.select_field)
 
     except Exception as e:
         logger.error(f"Помилка при редагуванні імені {e}")
-        await message.answer("Помилка при редагуванні імені")
+        await callback.message.answer("Помилка при редагуванні імені")
         await state.clear()
 
 @router.callback_query(EditBirthday.select_field)
