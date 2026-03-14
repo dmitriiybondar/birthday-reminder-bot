@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from database.birthdays_data import select_list, insert_birthday, del_birthday, update_birthday, select_names
+from database.birthdays_data import select_list, insert_birthday, del_birthday, update_birthday, select_names, select_by_tag
 from database.tags_data import get_tags
 from states.birthday_states import AddBirthday, DeleteBirthday, EditBirthday
 
@@ -15,17 +15,28 @@ logger = logging.getLogger(__name__)
 @router.message(Command("list"))
 async def cmd_list(message: types.Message):
     try:
-        result = await select_list()
+        tags = await get_tags()
 
-        if result:
-            items = [f"{res[1]} - {res[2]}" for res in result]
-            ans = "Список днів народження:\n\n" + "\n".join(items)
+        if not tags:
+            await message.answer("Нема тегів")
+            return
+        
+        answer = "<b>Список днів народження:</b>\n\n"
 
-            await message.answer(ans)
-            logger.info("Список надіслано")
+        for tag in tags:
+            tag_name = tag["tag"]
+            answer += f"<b>{tag_name}:</b> \n"
 
-        else:
-            await message.answer("Нема записів")
+            full_list_by_tags = await select_by_tag(tag_name)
+
+            if full_list_by_tags:
+                items = [f"{res[1]}: {res[2]}" for res in full_list_by_tags]
+                answer += "\n".join(items) + "\n\n"
+            else:
+                answer += "-Нема імен\n\n"
+
+        await message.answer(answer)
+        logger.info("Список надіслано")
 
     except Exception as e:
         await message.answer(f"Помилка {e}")

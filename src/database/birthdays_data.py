@@ -59,6 +59,25 @@ async def select_names():
         if conn:
             await conn.close()
 
+
+async def select_by_tag(tag):
+    try:
+        conn = await get_connection()
+        rows = await conn.fetch("SELECT * FROM birthdays WHERE tag = $1", tag)
+
+        if rows:
+            return rows
+
+        return[]
+    
+    except Exception as e:
+        logger.error(f"Помилка при переборі імен по тегу {e}")
+        return[]
+
+    finally:
+        if conn:
+            await conn.close()
+
 async def insert_birthday(name, date, tag):
     try:
         conn = await get_connection()
