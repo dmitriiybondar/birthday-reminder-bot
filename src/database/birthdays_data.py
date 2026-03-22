@@ -152,3 +152,17 @@ async def find_birthday(date):
     finally:
         if conn:
             await conn.close()
+
+
+async def update_name_with_tag(new_tag, old_tag):
+    try:
+        conn = await get_connection()
+        await conn.execute("UPDATE birthdays SET tag = $1 WHERE tag = $2", new_tag, old_tag)
+        logger.info("Теги імен оновлено")
+    
+    except Exception as e:
+        logger.error("Помилка при оновленні тегів імен")
+
+    finally:
+        if conn:
+            await conn.close()

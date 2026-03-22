@@ -6,6 +6,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from states.tag_states import Tag, EditTag
 from database.tags_data import insert_tag, del_tag, update_tag, get_tags
+from database.birthdays_data import update_name_with_tag
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -135,6 +136,7 @@ async def edit_tag_value(message: types.Message, state: FSMContext):
         old_tag = data["old_tag"]
         new_tag = message.text
 
+        await update_name_with_tag(new_tag, old_tag)
         await update_tag(old_tag, new_tag)
         await message.answer("Тег оновлено")
 
