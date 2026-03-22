@@ -101,6 +101,7 @@ async def delete_tag(callback: types.CallbackQuery, state: FSMContext):
     try:
         data = callback.data
         await del_tag(data)
+        await callback.message.delete_reply_markup()
         await callback.message.answer("Тег успішно видалено")
     except Exception as e:
         logger.error(f"Помилка при видаленні тегу {e}")
@@ -115,6 +116,7 @@ async def edit_tag_select(callback: types.CallbackQuery, state: FSMContext):
         await state.update_data(old_tag=callback.data)
         await state.set_state(EditTag.value)
 
+        await callback.message.delete_reply_markup()
         await callback.message.answer("Введіть нове значення")
 
     except Exception as e:
