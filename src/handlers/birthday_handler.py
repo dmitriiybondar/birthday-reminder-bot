@@ -1,3 +1,4 @@
+import re
 import logging
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
@@ -119,7 +120,11 @@ async def add_birthday_name(message: types.Message, state: FSMContext):
 @router.message(AddBirthday.add_date)
 async def add_birthday_date(message: types.Message, state: FSMContext):
     try:
-        await state.update_data(date=message.text)
+        date = message.text
+        if not re.match(r"^\d{2}\.\d{2}", str(date).strip()):
+            await message.answer("Введіть дату у формаі ДД.ММ")
+            return
+        await state.update_data(date=date)
 
         tags = await get_tags()
         builder = InlineKeyboardBuilder()   
