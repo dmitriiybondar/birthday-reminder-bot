@@ -152,6 +152,7 @@ async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
         date = data["date"]
 
         await insert_birthday(name, date, tag)
+        await callback.message.delete_reply_markup()
         await callback.message.answer("Дані успішно додавано")
 
     except Exception as e:
@@ -195,6 +196,7 @@ async def edit_birthday_name(callback: types.CallbackQuery, state: FSMContext):
         ]
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
+        await callback.message.delete_reply_markup()
         await callback.message.answer("Виберіть параметр для зміни", reply_markup=keyboard)
         await state.set_state(EditBirthday.select_field)
 
@@ -228,6 +230,7 @@ async def edit_birthday_date(callback: types.CallbackQuery, state: FSMContext):
             builder.adjust(3)
             keyboard = builder.as_markup()
 
+            await callback.message.delete_reply_markup()
             await callback.message.answer("Виберіть новий тег", reply_markup=keyboard)
             await state.set_state(EditBirthday.tag_value)
 
@@ -268,6 +271,7 @@ async def edit_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
         column = data["edit_column"]
 
         await update_birthday(name, column, value)
+        await callback.message.delete_reply_markup()
         await callback.message.answer("Запис оновлено")
 
     except Exception as e:
@@ -292,6 +296,7 @@ async def list_tag(callback: types.CallbackQuery, state: FSMContext):
         else:
             answer += "Нема імен за цим тегом"
 
+        await callback.message.delete_reply_markup()
         await callback.message.answer(answer)
 
     except Exception as e:
