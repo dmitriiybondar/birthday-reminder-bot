@@ -4,9 +4,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from database.birthdays_data import select_list, insert_birthday, del_birthday, update_birthday, select_names, select_by_tag
+from database.birthdays_data import insert_birthday, del_birthday, update_birthday, select_names, select_by_tag
 from database.tags_data import get_tags
-from states.birthday_states import AddBirthday, DeleteBirthday, EditBirthday
+from states.birthday_states import AddBirthday, DeleteBirthday, EditBirthday, ListBirthday
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -42,6 +42,29 @@ async def cmd_list(message: types.Message):
         await message.answer(f"Помилка {e}")
         logger.error(f"Поимлка {e}")
 
+@router.message(Command("list_tag"))
+async def cmd_list_tag(message: types.Message, state: FSMContext):
+    try:
+        tags = await get_tags()
+        builder = InlineKeyboardBuilder()
+
+        for tag in tags:
+            tag_name = tag["tag"]
+            builder.add(
+                types.InlineKeyboardButton(
+                    text=tag_name,
+                    callback_data=tag_name
+                )
+            )
+        builder.adjust(3)
+        keyboard = builder.as_markup()
+
+        await message.answer("Виберіть тег", reply_markup=keyboard)
+        await state.set_state(ListBirthday.choose_tag)
+
+    except Exception as e:
+        logger.error(f"Помилка вибору тегу {e}")
+        await message.answer("Помилка вибору тегу")
 
 @router.message(Command("add_birthday"))
 async def cmd_add_birthday(message: types.Message, state: FSMContext):
@@ -250,6 +273,30 @@ async def edit_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
     except Exception as e:
         await callback.message.answer("Помилка при оновлені запису")
         logger.error(f"Помилка при редагуванні даних {e}")
+
+    finally:
+        await state.clear()
+        await callback.answer()
+
+
+@router.callback_query(ListBirthday.choose_tag)
+async def list_tag(callback: types.CallbackQuery, state: FSMContext):
+    try:
+        value = callback.data
+        answer = f"<b>Список днів народження за тегом '{value}':</b>\n\n"
+        result = await select_by_tag(value)
+
+        if result:
+            items = [f"{res[1]}: {res[2]}" for res in result]
+            answer += "\n".join(items) + "\n\n"
+        else:
+            answer += "Нема імен за цим тегом"
+
+        await callback.message.answer(answer)
+
+    except Exception as e:
+        await callback.message.answer("Помилка при виводі списку за тегом")
+        logger.error(f"Помилка при виводі списку за тегом {e}")
 
     finally:
         await state.clear()
