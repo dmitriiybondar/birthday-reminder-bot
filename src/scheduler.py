@@ -15,6 +15,6 @@ async def send_reminders(bot: Bot, user: int, day: str):
     rows = await find_birthday(birth_date)
 
     if rows:
-        birthdays = [row["name"] for row in rows]
-        answer = f"{label} день народження:\n\n" + "\n".join(birthdays)
+        item = [f"{row["name"]} ({row["tag"]})" for row in rows]
+        answer = f"{label} день народження:\n\n" + "\n".join(item)
         await  bot.send_message(user, answer)
