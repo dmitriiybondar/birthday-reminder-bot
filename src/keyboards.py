@@ -6,7 +6,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 logger = logging.getLogger(__name__)
 
-BUTTONS_PER_PAGE = 5
+BUTTONS_PER_PAGE = 15
 
 def get_paginated_keyboard_tag(tags: list, page: int = 0):
     try:
