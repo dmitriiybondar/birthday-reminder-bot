@@ -44,7 +44,7 @@ async def edit_birthday_name(callback: types.CallbackQuery, state: FSMContext):
         ]
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-        await callback.message.delete_reply_markup()
+        await callback.message.delete()
         await callback.message.answer("Виберіть параметр для зміни", reply_markup=keyboard)
         await state.set_state(EditBirthday.select_field)
 
@@ -57,17 +57,18 @@ async def edit_birthday_name(callback: types.CallbackQuery, state: FSMContext):
 async def edit_birthday_date(callback: types.CallbackQuery, state: FSMContext):
     try:
         choice = callback.data
+        data = await state.get_data()
         await state.update_data(edit_column=choice)
+        await callback.message.delete()
 
         if choice != "tag":
-            await callback.message.answer("Введіть нове значення")
+            await callback.message.answer(f"Введіть нове значення для '{data["edit_name"]}'")
             await state.set_state(EditBirthday.value)
 
         else:
             tags = await get_tags()
             keyboard = get_paginated_keyboard_tag(tags, page=0)
 
-            await callback.message.delete_reply_markup()
             await callback.message.answer("Виберіть новий тег", reply_markup=keyboard)
             await state.set_state(EditBirthday.tag_value)
 
@@ -89,7 +90,7 @@ async def edit_birthday_value(message: types.Message, state: FSMContext):
         column = data["edit_column"]
 
         await update_birthday(name, column, value)
-        await message.answer("Запис оновлено")
+        await message.answer(f"Запис '{name}' оновлено")
 
     except Exception as e:
         await message.answer("Помилка при оновлені запису")
@@ -108,7 +109,7 @@ async def edit_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
         column = data["edit_column"]
 
         await update_birthday(name, column, value)
-        await callback.message.delete_reply_markup()
+        await callback.message.delete()
         await callback.message.answer("Запис оновлено")
 
     except Exception as e:

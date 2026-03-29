@@ -72,7 +72,7 @@ async def list_tag(callback: types.CallbackQuery, state: FSMContext):
         else:
             answer += "Нема імен за цим тегом"
 
-        await callback.message.delete_reply_markup()
+        await callback.message.delete()
         await callback.message.answer(answer)
 
     except Exception as e:

@@ -63,7 +63,7 @@ async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
         date = data["date"]
 
         await insert_birthday(name, date, tag)
-        await callback.message.delete_reply_markup()
+        await callback.message.delete()
         await callback.message.answer("Дані успішно додано")
 
     except Exception as e:
