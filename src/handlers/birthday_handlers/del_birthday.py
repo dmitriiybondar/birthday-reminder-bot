@@ -6,7 +6,7 @@ from aiogram.filters.command import Command
 
 from database.birthdays_data import del_birthday, select_names
 from states.birthday_states import DeleteBirthday
-from keybords import get_paginated_keyboard_names
+from keyboards import get_paginated_keyboard_names
 
 router = Router()
 logger = logging.getLogger(__name__)

@@ -3,7 +3,7 @@ import logging
 from aiogram import Router, types, F
 from database.birthdays_data import select_names
 from database.tags_data import get_tags
-from keybords import get_paginated_keyboard_names, get_paginated_keyboard_tag
+from keyboards import get_paginated_keyboard_names, get_paginated_keyboard_tag
 
 router = Router()
 logger = logging.getLogger(__name__)

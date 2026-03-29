@@ -8,7 +8,7 @@ from database.birthdays_data import update_birthday, select_names
 from database.tags_data import get_tags
 
 from states.birthday_states import EditBirthday
-from keybords import get_paginated_keyboard_tag, get_paginated_keyboard_names
+from keyboards import get_paginated_keyboard_tag, get_paginated_keyboard_names
 
 router = Router()
 logger = logging.getLogger(__name__)

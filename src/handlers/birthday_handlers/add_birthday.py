@@ -9,7 +9,7 @@ from database.birthdays_data import insert_birthday
 from database.tags_data import get_tags
 
 from states.birthday_states import AddBirthday
-from keybords import get_paginated_keyboard_tag
+from keyboards import get_paginated_keyboard_tag
 
 router = Router()
 logger = logging.getLogger(__name__)
