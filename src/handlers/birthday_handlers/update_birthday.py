@@ -58,6 +58,7 @@ async def edit_birthday_date(callback: types.CallbackQuery, state: FSMContext):
     try:
         choice = callback.data
         data = await state.get_data()
+
         await state.update_data(edit_column=choice)
         await callback.message.delete()
 
@@ -84,13 +85,18 @@ async def edit_birthday_date(callback: types.CallbackQuery, state: FSMContext):
 async def edit_birthday_value(message: types.Message, state: FSMContext):
     try:
         data = await state.get_data()
+        names = await select_names()
         
         value = message.text
         name = data["edit_name"]
         column = data["edit_column"]
 
+        if column == "name" and value in names:
+            await message.answer("Запис з таким ім'ям вже існує")
+            return
+
         await update_birthday(name, column, value)
-        await message.answer(f"Запис '{name}' оновлено")
+        await message.answer(f"Запис '{name}' оновлено на '{value}'")
 
     except Exception as e:
         await message.answer("Помилка при оновлені запису")
@@ -110,7 +116,7 @@ async def edit_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
 
         await update_birthday(name, column, value)
         await callback.message.delete()
-        await callback.message.answer("Запис оновлено")
+        await callback.message.answer(f"Тег для '{name}' оновлено на '{value}'")
 
     except Exception as e:
         await callback.message.answer("Помилка при оновлені запису")
