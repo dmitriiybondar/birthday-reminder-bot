@@ -58,23 +58,8 @@ async def cmd_list_tag(message: types.Message, state: FSMContext):
         logger.error(f"Помилка вибору тегу {e}")
         await message.answer("Помилка вибору тегу")
 
-@router.callback_query(ListBirthday.choose_tag, F.data.startswith("page_"))
-async def paginated_tags(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        page = int(callback.data.split("_")[1])
-        tags = await get_tags()
 
-        keyboard = get_paginated_keyboard_tag(tags, page=page)
-
-        await callback.message.edit_reply_markup(reply_markup=keyboard)
-
-    except Exception as e:
-        logger.error(f"Помилка пагінації {e}")
-        await callback.message.answer("Помилка завантаження сторінки")
-    finally:
-        await callback.answer()
-
-@router.callback_query(ListBirthday.choose_tag, ~F.data.startswith("page_"))
+@router.callback_query(ListBirthday.choose_tag)
 async def list_tag(callback: types.CallbackQuery, state: FSMContext):
     try:
         value = callback.data

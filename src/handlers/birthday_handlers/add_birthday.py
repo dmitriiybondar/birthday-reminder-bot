@@ -53,23 +53,8 @@ async def add_birthday_date(message: types.Message, state: FSMContext):
         logger.error(f"Помилка додавання дати {e}")
         await state.clear()
 
-@router.callback_query(AddBirthday.add_date, F.data.startswith("page_"))
-async def paginated_tags(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        page = int(callback.data.split("_")[1])
-        tags = await get_tags()
 
-        keyboard = get_paginated_keyboard_tag(tags, page=page)
-
-        await callback.message.edit_reply_markup(reply_markup=keyboard)
-
-    except Exception as e:
-        logger.error(f"Помилка пагінації {e}")
-        await callback.message.answer("Помилка завантаження сторінки")
-    finally:
-        await callback.answer()
-
-@router.callback_query(AddBirthday.add_date, ~F.data.startswith("page_"))
+@router.callback_query(AddBirthday.add_date)
 async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
     try:
         data = await state.get_data()

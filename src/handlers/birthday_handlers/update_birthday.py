@@ -29,24 +29,7 @@ async def cmd_update_birthday(message: types.Message, state: FSMContext):
         await state.clear()
 
 
-@router.callback_query(EditBirthday.edit_name, F.data.startswith("page_"))
-async def paginated_names(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        page = int(callback.data.split("_")[1])
-        names = await select_names()
-
-        keyboard = get_paginated_keyboard_names(names, page=page)
-
-        await callback.message.edit_reply_markup(reply_markup=keyboard)
-
-    except Exception as e:
-        logger.error(f"Помилка пагінації {e}")
-        await callback.message.answer("Помилка завантаження сторінки")
-    finally:
-        await callback.answer()
-
-
-@router.callback_query(EditBirthday.edit_name, ~F.data.startswith("page_"))
+@router.callback_query(EditBirthday.edit_name)
 async def edit_birthday_name(callback: types.CallbackQuery, state: FSMContext):
     try:
         data = callback.data
@@ -115,23 +98,7 @@ async def edit_birthday_value(message: types.Message, state: FSMContext):
         await state.clear()
 
 
-@router.callback_query(EditBirthday.tag_value, F.data.startswith("page_"))
-async def paginated_tags(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        page = int(callback.data.split("_")[1])
-        tags = await get_tags()
-
-        keyboard = get_paginated_keyboard_tag(tags, page=page)
-        await callback.message.edit_reply_markup(reply_markup=keyboard)
-
-    except Exception as e:
-        logger.error(f"Помилка пагінації {e}")
-        await callback.message.answer("Помилка завантаження сторінки")
-    finally:
-        await callback.answer()
-
-
-@router.callback_query(EditBirthday.tag_value, ~F.data.startswith("page_"))
+@router.callback_query(EditBirthday.tag_value)
 async def edit_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
     try:
         data = await state.get_data()

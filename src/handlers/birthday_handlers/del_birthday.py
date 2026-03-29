@@ -29,23 +29,8 @@ async def cmd_delete_birthday(message: types.Message, state: FSMContext):
         await message.answer("Помилка вибору імені")
         await state.clear()
 
-@router.callback_query(DeleteBirthday.delete_birth, F.data.startswith("page_"))
-async def paginated_names(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        page = int(callback.data.split("_")[1])
-        names = await select_names()
 
-        keyboard = get_paginated_keyboard_names(names, page=page)
-
-        await callback.message.edit_reply_markup(reply_markup=keyboard)
-
-    except Exception as e:
-        logger.error(f"Помилка пагінації {e}")
-        await callback.message.answer("Помилка завантаження сторінки")
-    finally:
-        await callback.answer()
-
-@router.callback_query(DeleteBirthday.delete_birth, ~F.data.startswith("page_"))
+@router.callback_query(DeleteBirthday.delete_birth)
 async def delete_birthday(callback: types.CallbackQuery, state: FSMContext):
     try:
         name = callback.data

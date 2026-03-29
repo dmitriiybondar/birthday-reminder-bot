@@ -34,7 +34,7 @@ def get_paginated_keyboard_tag(tags: list, page: int = 0):
             nav_buttons.append(
                 types.InlineKeyboardButton(
                     text="⬅️ Назад",
-                    callback_data=f"page_{page-1}"
+                    callback_data=f"pageTag_{page-1}"
                 )
             )
 
@@ -42,7 +42,7 @@ def get_paginated_keyboard_tag(tags: list, page: int = 0):
             nav_buttons.append(
                 types.InlineKeyboardButton(
                     text="Вперед ➡️",
-                    callback_data=f"page_{page+1}"
+                    callback_data=f"pageTag_{page+1}"
                 )
             )
 
@@ -80,7 +80,7 @@ def get_paginated_keyboard_names(names: list, page: int = 0):
             nav_buttons.append(
                 types.InlineKeyboardButton(
                     text="⬅️ Назад",
-                    callback_data=f"page_{page-1}"
+                    callback_data=f"pageName_{page-1}"
                 )
             )
 
@@ -88,7 +88,7 @@ def get_paginated_keyboard_names(names: list, page: int = 0):
             nav_buttons.append(
                 types.InlineKeyboardButton(
                     text="Вперед ➡️",
-                    callback_data=f"page_{page+1}"
+                    callback_data=f"pageName_{page+1}"
                 )
             )
 
