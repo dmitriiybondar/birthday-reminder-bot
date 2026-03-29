@@ -5,7 +5,7 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
 
-from database.birthdays_data import insert_birthday
+from database.birthdays_data import insert_birthday, select_names
 from database.tags_data import get_tags
 
 from states.birthday_states import AddBirthday
@@ -23,6 +23,13 @@ async def cmd_add_birthday(message: types.Message, state: FSMContext):
 @router.message(AddBirthday.add_name)
 async def add_birthday_name(message: types.Message, state: FSMContext):
     try:
+        data = message.text
+        names = await select_names()
+
+        if data in names:
+            await message.answer("Запис з таким ім'ям вже існує")
+            return
+
         await state.update_data(name=message.text)
         await message.answer("Введіть дату в форматі ДД.ММ")
         await state.set_state(AddBirthday.add_date)
@@ -63,7 +70,7 @@ async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
         date = data["date"]
 
         await insert_birthday(name, date, tag)
-        await callback.message.delete_reply_markup()
+        await callback.message.delete()
         await callback.message.answer("Дані успішно додано")
 
     except Exception as e:

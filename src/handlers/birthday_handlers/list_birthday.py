@@ -24,15 +24,12 @@ async def cmd_list(message: types.Message):
 
         for tag in tags:
             tag_name = tag["tag"]
-            answer += f"<b>{tag_name}:</b> \n"
-
             full_list_by_tags = await select_by_tag(tag_name)
 
             if full_list_by_tags:
+                answer += f"<b>{tag_name}:</b> \n"
                 items = [f"{res[1]}: {res[2]}" for res in full_list_by_tags]
                 answer += "\n".join(items) + "\n\n"
-            else:
-                answer += "-Нема імен\n\n"
 
         await message.answer(answer)
         logger.info("Список надіслано")
@@ -72,7 +69,7 @@ async def list_tag(callback: types.CallbackQuery, state: FSMContext):
         else:
             answer += "Нема імен за цим тегом"
 
-        await callback.message.delete_reply_markup()
+        await callback.message.delete()
         await callback.message.answer(answer)
 
     except Exception as e:
