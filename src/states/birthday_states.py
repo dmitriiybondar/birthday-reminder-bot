@@ -13,3 +13,6 @@ class EditBirthday(StatesGroup):
     select_field = State()
     tag_value = State()
     value = State()
+
+class ListBirthday(StatesGroup):
+    choose_tag = State()

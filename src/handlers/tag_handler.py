@@ -6,6 +6,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from states.tag_states import Tag, EditTag
 from database.tags_data import insert_tag, del_tag, update_tag, get_tags
+from database.birthdays_data import update_name_with_tag
+from keyboards import get_paginated_keyboard_tag
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -20,21 +22,14 @@ async def cmd_add_tag(message: types.Message, state: FSMContext):
 async def cmd_delete_tag(message: types.Message, state: FSMContext):
     try:
         tags = await get_tags()
-        builder = InlineKeyboardBuilder()
 
-        for tag in tags:
-            tag_name = tag["tag"]
-            builder.add(
-                types.InlineKeyboardButton(
-                    text=tag_name,
-                    callback_data=tag_name
-                )
-            )
-        builder.adjust(3)
-        keyboard = builder.as_markup()
+        if not tags:
+            await message.answer("Нема тегів")
+            return
 
-        await state.set_state(Tag.delete_tag)
+        keyboard = get_paginated_keyboard_tag(tags, page=0)
         await message.answer("Виберіть тег для видалення", reply_markup=keyboard)
+        await state.set_state(Tag.delete_tag)
 
     except Exception as e:
         logger.error(f"Помилка видалення тегу {e}")
@@ -45,21 +40,14 @@ async def cmd_delete_tag(message: types.Message, state: FSMContext):
 async def cmd_edit_tag(message: types.Message, state: FSMContext):
     try:
         tags = await get_tags()
-        builder = InlineKeyboardBuilder()
 
-        for tag in tags:
-            tag_name = tag["tag"]
-            builder.add(
-                types.InlineKeyboardButton(
-                    text=tag_name,
-                    callback_data=tag_name
-                )
-            )
-        builder.adjust(3)
-        keyboard = builder.as_markup()
-
-        await state.set_state(EditTag.choose_tag)
+        if not tags:
+            await message.answer("Нема тегів")
+            return
+        
+        keyboard = get_paginated_keyboard_tag(tags, page=0)
         await message.answer("Виберіть тег для редагування", reply_markup=keyboard)
+        await state.set_state(EditTag.choose_tag)
 
     except Exception as e:
         logger.error(f"Помилка редагування тегу {e}")
@@ -72,7 +60,7 @@ async def cmd_get_tags(message: types.Message):
         tags = await get_tags()
 
         if tags:
-            tag_list = [tag[1] for tag in tags]
+            tag_list = [tag["tag"] for tag in tags]
             answer = "Список тегів:\n\n" + "\n".join(tag_list)
             await message.answer(answer)
         else:
@@ -85,9 +73,16 @@ async def cmd_get_tags(message: types.Message):
 
 @router.message(Tag.add_tag)
 async def add_tag(message: types.Message, state: FSMContext):
-    data = message.text
-
     try:
+        data = message.text.strip()
+        tags = await get_tags()
+        if tags:
+            tag_list = [tag["tag"] for tag in tags]
+
+            if data in tag_list:
+                await message.answer("Тег вже існує")
+                return
+
         await insert_tag(data)
         await message.answer("Тег успішно додано")
     except Exception as e:
@@ -96,11 +91,13 @@ async def add_tag(message: types.Message, state: FSMContext):
     finally:
         await state.clear()
         
+
 @router.callback_query(Tag.delete_tag)
 async def delete_tag(callback: types.CallbackQuery, state: FSMContext):
     try:
         data = callback.data
         await del_tag(data)
+        await callback.message.delete_reply_markup()
         await callback.message.answer("Тег успішно видалено")
     except Exception as e:
         logger.error(f"Помилка при видаленні тегу {e}")
@@ -109,12 +106,14 @@ async def delete_tag(callback: types.CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.answer()
 
+
 @router.callback_query(EditTag.choose_tag)
 async def edit_tag_select(callback: types.CallbackQuery, state: FSMContext):
     try:
         await state.update_data(old_tag=callback.data)
         await state.set_state(EditTag.value)
 
+        await callback.message.delete_reply_markup()
         await callback.message.answer("Введіть нове значення")
 
     except Exception as e:
@@ -133,6 +132,7 @@ async def edit_tag_value(message: types.Message, state: FSMContext):
         old_tag = data["old_tag"]
         new_tag = message.text
 
+        await update_name_with_tag(new_tag, old_tag)
         await update_tag(old_tag, new_tag)
         await message.answer("Тег оновлено")
 

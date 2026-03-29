@@ -9,16 +9,21 @@ from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from handlers.birthday_handler import router as birthday_router
+from handlers.birthday_handlers.update_birthday import router as update_birthday_router
+from handlers.birthday_handlers.list_birthday import router as list_birthdays_router
+from handlers.birthday_handlers.del_birthday import router as delete_birthday_router
+from handlers.birthday_handlers.add_birthday import router as add_birthday_router
+from handlers.pagination import router as pagination_router
 from handlers.base_commands import router as base_router
 from handlers.tag_handler import router as tag_router
+
 from scheduler import send_reminders
 from database.birthdays_data import init_birthday_db
 from database.tags_data import init_tag_db
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout)
     ]
@@ -39,13 +44,17 @@ async def main():
     )
     dp = Dispatcher()
 
-    dp.include_router(base_router)
-    dp.include_router(birthday_router)
     dp.include_router(tag_router)
+    dp.include_router(base_router)
+    dp.include_router(pagination_router)
+    dp.include_router(add_birthday_router)
+    dp.include_router(list_birthdays_router)
+    dp.include_router(delete_birthday_router)
+    dp.include_router(update_birthday_router)
 
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
 
-    scheduler.add_job(
+    scheduler.add_job(  
         send_reminders,
         trigger="cron",
         hour=12,
