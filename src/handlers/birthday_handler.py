@@ -13,15 +13,6 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-
-@router.message(Command("add_birthday"))
-async def cmd_add_birthday(message: types.Message, state: FSMContext):
-    await state.set_state(AddBirthday.add_name)
-    await message.answer("Введіть ім'я")
-
-
-
-
 @router.message(Command("update_birthday"))
 async def cmd_update_birthday(message: types.Message, state: FSMContext):
     try:
@@ -46,87 +37,6 @@ async def cmd_update_birthday(message: types.Message, state: FSMContext):
         await message.answer("Помилка вибору імені")
         await state.clear()
 
-
-@router.message(AddBirthday.add_name)
-async def add_birthday_name(message: types.Message, state: FSMContext):
-    try:
-        await state.update_data(name=message.text)
-        await message.answer("Введіть дату в форматі ДД.ММ")
-        await state.set_state(AddBirthday.add_date)
-
-    except Exception as e:
-        await message.answer(f"Помилка додавання імені")
-        logger.error("Помилка додавання імені")
-        await state.clear()
-
-
-@router.message(AddBirthday.add_date)
-async def add_birthday_date(message: types.Message, state: FSMContext):
-    try:
-        date = message.text
-        if not re.match(r"^\d{2}\.\d{2}", str(date).strip()):
-            await message.answer("Введіть дату у формаі ДД.ММ")
-            return
-        await state.update_data(date=date)
-
-        tags = await get_tags()
-        builder = InlineKeyboardBuilder()   
-
-        for tag in tags:
-            tag_name = tag["tag"]
-            builder.add(
-                types.InlineKeyboardButton(
-                    text = tag_name,
-                    callback_data=tag_name
-                )
-            )
-        builder.adjust(3)
-        keyboard = builder.as_markup()
-
-        await message.answer("Виберіть тег:", reply_markup=keyboard)
-
-    except Exception as e:
-        await message.answer(f"Помилка додавання дати {e}")
-        logger.error("Помилка додавання дати")
-        await state.clear()
-
-
-@router.callback_query(AddBirthday.add_date)
-async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        data = await state.get_data()
-        tag = callback.data
-        name = data["name"]
-        date = data["date"]
-
-        await insert_birthday(name, date, tag)
-        await callback.message.delete_reply_markup()
-        await callback.message.answer("Дані успішно додано")
-
-    except Exception as e:
-        await callback.message.answer("Помилка додавання даних")
-        logger.error("Помилка додавання даних")
-
-    finally:
-        await state.clear()
-        await callback.answer()
-
-@router.callback_query(DeleteBirthday.delete_birth)
-async def delete_birthday(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        name = callback.data
-        result = await del_birthday(name)
-
-        if result == "success":
-            await callback.message.answer(f"День народження {name} видалено")
-        else:
-            await callback.message.answer("Ім'я не знайдено")
-
-    except Exception as e:
-        await callback.message.answer(f"Помилка при видаленні запису {e}")
-        logging.error(f"Помилка при видаленні запису {e}")
-    finally:
-        await state.clear()
 
 
 @router.callback_query(EditBirthday.edit_name)

@@ -4,9 +4,6 @@ from math import ceil
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from database.tags_data import get_tags
-from database.birthdays_data import select_names
-
 logger = logging.getLogger(__name__)
 
 BUTTONS_PER_PAGE = 5
@@ -102,46 +99,3 @@ def get_paginated_keyboard_names(names: list, page: int = 0):
     
     except Exception as e:
         logger.error(f"Помилка пагінації імен {e}", exc_info=True)
-
-async def tag_keyboard_list():
-    try:
-        tags = await get_tags()
-        builder = InlineKeyboardBuilder()
-
-        for tag in tags:
-            tag_name = tag["tag"]
-            builder.add(
-                types.InlineKeyboardButton(
-                    text = tag_name,
-                    callback_data=tag_name
-                )
-            )
-        builder.adjust(3)
-        keyboard = builder.as_markup()
-        logger.info("Таги знайдено")
-
-        return keyboard
-    
-    except Exception as e:
-        logger.error(f"Теги не знайдено {e}")
-
-async def people_keyboard_list():
-    try:
-        people = await select_names()
-        builder = InlineKeyboardBuilder()
-
-        for name in people:
-            builder.add(
-                types.InlineKeyboardButton(
-                    text=name,
-                    callback_data=name
-                )
-            )
-        builder.adjust(3)
-        keyboard = builder.as_markup()
-        logger.info("Імена знайдено")
-
-        return keyboard
-    
-    except Exception as e:
-        logger.error(f"Імена не знайдено {e}")
