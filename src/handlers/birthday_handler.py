@@ -20,30 +20,6 @@ async def cmd_add_birthday(message: types.Message, state: FSMContext):
     await message.answer("Введіть ім'я")
 
 
-@router.message(Command("delete_birthday"))
-async def cmd_delete_birthday(message: types.Message, state: FSMContext):
-    try:
-        people = await select_names()
-        builder = InlineKeyboardBuilder()
-
-        for name in people:
-            builder.add(
-                types.InlineKeyboardButton(
-                    text=name,
-                    callback_data=name
-                )
-            )
-        builder.adjust(3)
-        keyboard = builder.as_markup()
-
-        await state.set_state(DeleteBirthday.delete_birth)
-        await message.answer("Введіть ім'я для видалення", reply_markup=keyboard)
-
-    except Exception as e:
-        logger.error(f"Помилка вибору імені {e}")
-        await message.answer("Помилка вибору імені")
-        await state.clear()
-
 
 
 @router.message(Command("update_birthday"))

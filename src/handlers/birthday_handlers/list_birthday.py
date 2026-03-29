@@ -3,10 +3,10 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
 
-from database.birthdays_data import select_names, select_by_tag
+from database.birthdays_data import select_by_tag
 from database.tags_data import get_tags
 from states.birthday_states import ListBirthday
-from keybords import get_paginated_keyboard
+from keybords import get_paginated_keyboard_tag
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ async def cmd_list_tag(message: types.Message, state: FSMContext):
         if not tags:
             await message.answer("Немає тегів")
     
-        keyboard = get_paginated_keyboard(tags, page=0)
+        keyboard = get_paginated_keyboard_tag(tags, page=0)
 
         await message.answer("Виберіть тег", reply_markup=keyboard)
         await state.set_state(ListBirthday.choose_tag)
@@ -64,7 +64,7 @@ async def paginated_tags(callback: types.CallbackQuery, state: FSMContext):
         page = int(callback.data.split("_")[1])
         tags = await get_tags()
 
-        keyboard = get_paginated_keyboard(tags, page=page)
+        keyboard = get_paginated_keyboard_tag(tags, page=page)
 
         await callback.message.edit_reply_markup(reply_markup=keyboard)
 
