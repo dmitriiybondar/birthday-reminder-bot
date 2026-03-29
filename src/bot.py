@@ -9,6 +9,7 @@ from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from handlers.birthday_handlers.list_birthday import router as list_birthdays_router
 from handlers.birthday_handler import router as birthday_router
 from handlers.base_commands import router as base_router
 from handlers.tag_handler import router as tag_router
@@ -42,6 +43,7 @@ async def main():
     dp.include_router(base_router)
     dp.include_router(birthday_router)
     dp.include_router(tag_router)
+    dp.include_router(list_birthdays_router)
 
     scheduler = AsyncIOScheduler(timezone="Europe/Kyiv")
 
