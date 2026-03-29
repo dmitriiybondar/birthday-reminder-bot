@@ -50,6 +50,7 @@ async def delete_birthday(callback: types.CallbackQuery, state: FSMContext):
     try:
         name = callback.data
         result = await del_birthday(name)
+        await callback.message.delete_reply_markup()
 
         if result == "success":
             await callback.message.answer(f"День народження {name} видалено")
