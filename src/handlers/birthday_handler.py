@@ -1,6 +1,7 @@
 import re
 import logging
-from aiogram import Router, types
+from math import ceil
+from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -12,6 +13,49 @@ from states.birthday_states import AddBirthday, DeleteBirthday, EditBirthday, Li
 router = Router()
 logger = logging.getLogger(__name__)
 
+BUTTONS_PER_PAGE = 5
+
+def get_paginated_keyboard(tags: list, page: int = 0):
+    builder = InlineKeyboardBuilder()
+
+    start_index = page * BUTTONS_PER_PAGE
+    end_index = start_index + BUTTONS_PER_PAGE
+    page_tags = tags[start_index:end_index]
+
+    for tag in page_tags:
+        tag_name = tag["tag"]
+        builder.add(
+            types.InlineKeyboardButton(
+                text=tag_name,
+                callback_data=tag_name
+            )
+        )
+
+    builder.adjust(2)
+
+    nav_buttons = []
+    total_pages = ceil(len(tags) / BUTTONS_PER_PAGE)
+
+    if page > 0:
+        nav_buttons.append(
+            types.InlineKeyboardButton(
+                text="⬅️ Назад",
+                callback_data=f"page_{page-1}"
+            )
+        )
+
+    if page < total_pages - 1:
+        nav_buttons.append(
+            types.InlineKeyboardButton(
+                text="Вперед ➡️",
+                callback_data=f"page_{page+1}"
+            )
+        )
+
+    if nav_buttons:
+        builder.row(*nav_buttons)
+
+    return builder.as_markup()
 
 @router.message(Command("list"))
 async def cmd_list(message: types.Message):
@@ -43,22 +87,15 @@ async def cmd_list(message: types.Message):
         await message.answer(f"Помилка {e}")
         logger.error(f"Поимлка {e}")
 
+
 @router.message(Command("list_tag"))
 async def cmd_list_tag(message: types.Message, state: FSMContext):
     try:
         tags = await get_tags()
-        builder = InlineKeyboardBuilder()
-
-        for tag in tags:
-            tag_name = tag["tag"]
-            builder.add(
-                types.InlineKeyboardButton(
-                    text=tag_name,
-                    callback_data=tag_name
-                )
-            )
-        builder.adjust(3)
-        keyboard = builder.as_markup()
+        if not tags:
+            await message.answer("Немає тегів")
+    
+        keyboard = get_paginated_keyboard(tags, page=0)
 
         await message.answer("Виберіть тег", reply_markup=keyboard)
         await state.set_state(ListBirthday.choose_tag)
@@ -66,6 +103,46 @@ async def cmd_list_tag(message: types.Message, state: FSMContext):
     except Exception as e:
         logger.error(f"Помилка вибору тегу {e}")
         await message.answer("Помилка вибору тегу")
+
+@router.callback_query(ListBirthday.choose_tag, F.data.startswith("page_"))
+async def paginated_tags(callback: types.CallbackQuery, state: FSMContext):
+    try:
+        page = int(callback.data.split("_")[1])
+        tags = await get_tags()
+
+        keyboard = get_paginated_keyboard(tags, page=page)
+
+        await callback.message.edit_reply_markup(reply_markup=keyboard)
+
+    except Exception as e:
+        logger.error(f"Помилка пагінації {e}")
+        await callback.message.answer("Помилка завантаження сторінки")
+    finally:
+        await callback.answer()
+
+@router.callback_query(ListBirthday.choose_tag, ~F.data.startswith("page_"))
+async def list_tag(callback: types.CallbackQuery, state: FSMContext):
+    try:
+        value = callback.data
+        answer = f"<b>Список днів народження за тегом '{value}':</b>\n\n"
+        result = await select_by_tag(value)
+
+        if result:
+            items = [f"{res[1]}: {res[2]}" for res in result]
+            answer += "\n".join(items) + "\n\n"
+        else:
+            answer += "Нема імен за цим тегом"
+
+        await callback.message.delete_reply_markup()
+        await callback.message.answer(answer)
+
+    except Exception as e:
+        await callback.message.answer("Помилка при виводі списку за тегом")
+        logger.error(f"Помилка при виводі списку за тегом {e}")
+
+    finally:
+        await state.clear()
+        await callback.answer()
 
 @router.message(Command("add_birthday"))
 async def cmd_add_birthday(message: types.Message, state: FSMContext):
@@ -75,8 +152,28 @@ async def cmd_add_birthday(message: types.Message, state: FSMContext):
 
 @router.message(Command("delete_birthday"))
 async def cmd_delete_birthday(message: types.Message, state: FSMContext):
-    await state.set_state(DeleteBirthday.delete_birth)
-    await message.answer("Введіть ім'я для видалення")
+    try:
+        people = await select_names()
+        builder = InlineKeyboardBuilder()
+
+        for name in people:
+            builder.add(
+                types.InlineKeyboardButton(
+                    text=name,
+                    callback_data=name
+                )
+            )
+        builder.adjust(3)
+        keyboard = builder.as_markup()
+
+        await state.set_state(DeleteBirthday.delete_birth)
+        await message.answer("Введіть ім'я для видалення", reply_markup=keyboard)
+
+    except Exception as e:
+        logger.error(f"Помилка вибору імені {e}")
+        await message.answer("Помилка вибору імені")
+        await state.clear()
+
 
 
 @router.message(Command("update_birthday"))
@@ -158,7 +255,7 @@ async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
 
         await insert_birthday(name, date, tag)
         await callback.message.delete_reply_markup()
-        await callback.message.answer("Дані успішно додавано")
+        await callback.message.answer("Дані успішно додано")
 
     except Exception as e:
         await callback.message.answer("Помилка додавання даних")
@@ -168,19 +265,19 @@ async def add_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.answer()
 
-@router.message(DeleteBirthday.delete_birth)
-async def delete_birthday(message: types.Message, state: FSMContext):
-    name = message.text
-
+@router.callback_query(DeleteBirthday.delete_birth)
+async def delete_birthday(callback: types.CallbackQuery, state: FSMContext):
     try:
+        name = callback.data
         result = await del_birthday(name)
+
         if result == "success":
-            await message.answer(f"День народження {name} видалено")
+            await callback.message.answer(f"День народження {name} видалено")
         else:
-            await message.answer("Ім'я не знайдено")
+            await callback.message.answer("Ім'я не знайдено")
 
     except Exception as e:
-        await message.answer(f"Помилка при видаленні запису {e}")
+        await callback.message.answer(f"Помилка при видаленні запису {e}")
         logging.error(f"Помилка при видаленні запису {e}")
     finally:
         await state.clear()
@@ -282,31 +379,6 @@ async def edit_birthday_tag(callback: types.CallbackQuery, state: FSMContext):
     except Exception as e:
         await callback.message.answer("Помилка при оновлені запису")
         logger.error(f"Помилка при редагуванні даних {e}")
-
-    finally:
-        await state.clear()
-        await callback.answer()
-
-
-@router.callback_query(ListBirthday.choose_tag)
-async def list_tag(callback: types.CallbackQuery, state: FSMContext):
-    try:
-        value = callback.data
-        answer = f"<b>Список днів народження за тегом '{value}':</b>\n\n"
-        result = await select_by_tag(value)
-
-        if result:
-            items = [f"{res[1]}: {res[2]}" for res in result]
-            answer += "\n".join(items) + "\n\n"
-        else:
-            answer += "Нема імен за цим тегом"
-
-        await callback.message.delete_reply_markup()
-        await callback.message.answer(answer)
-
-    except Exception as e:
-        await callback.message.answer("Помилка при виводі списку за тегом")
-        logger.error(f"Помилка при виводі списку за тегом {e}")
 
     finally:
         await state.clear()
