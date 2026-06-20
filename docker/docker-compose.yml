@@ -7,10 +7,9 @@ services:
     restart: always
     env_file:
       - ../.env
-    environment:
-      - PYTHONUNBUFFERED=1
     depends_on:
       - birthday_db
+    
   
   birthday_db:
     image: postgres:15-alpine
@@ -24,4 +23,4 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  birthday_db_data:
