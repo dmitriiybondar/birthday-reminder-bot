@@ -3,10 +3,9 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
 
-from database.birthdays_data import select_by_tag
-from database.tags_data import get_tags
+from database.birthdays_data import select_by_tag, select_list
+from handlers.tag_handler import get_tags
 from states.birthday_states import ListBirthday
-from keyboards import get_paginated_keyboard_tag
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -14,21 +13,21 @@ logger = logging.getLogger(__name__)
 @router.message(Command("list"))
 async def cmd_list(message: types.Message):
     try:
+        names = await select_list()
         tags = await get_tags()
 
-        if not tags:
-            await message.answer("Нема тегів")
+        if not names:
+            await message.answer("Нема днів народження")
             return
         
         answer = "<b>Список днів народження:</b>\n\n"
 
         for tag in tags:
-            tag_name = tag["tag"]
-            full_list_by_tags = await select_by_tag(tag_name)
+            full_list_by_tags = await select_by_tag(tag['tag'])
 
             if full_list_by_tags:
-                answer += f"<b>{tag_name}:</b> \n"
-                items = [f"{res[1]}: {res[2]}" for res in full_list_by_tags]
+                answer += f"<b>{tag['tag']}:</b> \n"
+                items = [f"{res['name']}: {res['date']}" for res in full_list_by_tags]
                 answer += "\n".join(items) + "\n\n"
 
         await message.answer(answer)
@@ -37,23 +36,6 @@ async def cmd_list(message: types.Message):
     except Exception as e:
         await message.answer(f"Помилка {e}")
         logger.error(f"Поимлка {e}")
-
-
-@router.message(Command("list_tag"))
-async def cmd_list_tag(message: types.Message, state: FSMContext):
-    try:
-        tags = await get_tags()
-        if not tags:
-            await message.answer("Немає тегів")
-    
-        keyboard = get_paginated_keyboard_tag(tags, page=0)
-
-        await message.answer("Виберіть тег", reply_markup=keyboard)
-        await state.set_state(ListBirthday.choose_tag)
-
-    except Exception as e:
-        logger.error(f"Помилка вибору тегу {e}")
-        await message.answer("Помилка вибору тегу")
 
 
 @router.callback_query(ListBirthday.choose_tag)

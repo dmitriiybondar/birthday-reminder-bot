@@ -2,15 +2,33 @@ import logging
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.filters.command import Command
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from states.tag_states import Tag, EditTag
+from states.birthday_states import ListBirthday
 from database.tags_data import insert_tag, del_tag, update_tag, get_tags
 from database.birthdays_data import update_name_with_tag
 from keyboards import get_paginated_keyboard_tag
 
+
 router = Router()
 logger = logging.getLogger(__name__)
+
+@router.message(Command("list_tag"))
+async def cmd_list_tag(message: types.Message, state: FSMContext):
+    try:
+        tags = await get_tags()
+        if not tags:
+            await message.answer("Немає тегів")
+            return
+    
+        keyboard = get_paginated_keyboard_tag(tags, page=0)
+
+        await message.answer("Виберіть тег", reply_markup=keyboard)
+        await state.set_state(ListBirthday.choose_tag)
+
+    except Exception as e:
+        logger.error(f"Помилка вибору тегу {e}")
+        await message.answer("Помилка вибору тегу")
 
 @router.message(Command("add_tag"))
 async def cmd_add_tag(message: types.Message, state: FSMContext):
