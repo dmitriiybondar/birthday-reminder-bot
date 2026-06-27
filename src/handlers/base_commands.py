@@ -8,7 +8,7 @@ router = Router()
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
-    await message.answer("Бот")
+    await message.answer("Бот запущено")
 
 @router.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
