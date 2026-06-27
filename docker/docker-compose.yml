@@ -20,7 +20,7 @@ services:
     ports:
       - 5433:5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - birthday_db_data:/var/lib/postgresql/data
 
 volumes:
   birthday_db_data:
