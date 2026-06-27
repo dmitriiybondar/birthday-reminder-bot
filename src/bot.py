@@ -4,6 +4,7 @@ import asyncio
 import logging
 
 from dotenv import load_dotenv
+from aiogram import F
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
@@ -43,6 +44,9 @@ async def main():
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     dp = Dispatcher()
+
+    dp.message.filter(F.from_user.id == user)
+    dp.callback_query.filter(F.from_user.id == user)
 
     dp.include_router(tag_router)
     dp.include_router(base_router)
