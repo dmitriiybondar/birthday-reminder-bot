@@ -1,0 +1,19 @@
+name: AUTO DEPLOY
+on:
+  push:
+    branches: [ main ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: SSH Deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /root/Birthdays # Вкажіть тут повний шлях до папки з вашим ботом на сервері
+          git pull origin main
+          docker compose -f docker/docker-compose.yml down
+          docker compose -f docker/docker-compose.yml up -d --build
