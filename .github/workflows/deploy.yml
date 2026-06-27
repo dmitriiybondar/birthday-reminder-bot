@@ -13,7 +13,7 @@ jobs:
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd /root/Birthdays # Вкажіть тут повний шлях до папки з вашим ботом на сервері
+          cd /root/reminder-bot
           git pull origin main
           docker compose -f docker/docker-compose.yml down
           docker compose -f docker/docker-compose.yml up -d --build
