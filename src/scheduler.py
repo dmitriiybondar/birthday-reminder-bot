@@ -1,4 +1,3 @@
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import date, timedelta
 from database.birthdays_data import find_birthday
 from aiogram import Bot
