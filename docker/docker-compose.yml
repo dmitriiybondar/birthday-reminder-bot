@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: birthday_bot
-    restart: always
+    restart: unless-stopped
     env_file:
       - ../.env
     depends_on:
@@ -14,7 +14,7 @@ services:
   birthday_db:
     image: postgres:15-alpine
     container_name: birthday_db
-    restart: always
+    restart: unless-stopped
     env_file:
       - ../.env
     ports:
